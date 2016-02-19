@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
 #include "serveur.h"
 
 int running = 1;
@@ -18,10 +20,15 @@ int main(){
 
     setup_server(socket_desc);
 
+    listen(socket_desc, 128);
+
     printf("Yeah ! Socket is opened with descriptor %d\n", socket_desc);
 
     while(running){
-
+        struct sockaddr client;
+        socklen_t length;
+        int ack = accept(socket_desc, &client, &length);
+        usleep(1000);
     }
     return 0;
 }
@@ -31,7 +38,9 @@ struct sockaddr_in init_server_descriptor() {
     memset((char*)&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET; // We are talking about IPv4
     addr.sin_port = htons(SERVER_PORT); // See constants.h for value
-    addr.sin_addr.s_addr = INADDR_ANY; // Listen on 0.0.0.0
+    struct in_addr listen_ip;
+    inet_aton("0.0.0.0", &listen_ip);
+    addr.sin_addr = listen_ip; // Listen on 0.0.0.0
     return addr;
 }
 
