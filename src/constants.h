@@ -1,0 +1,10 @@
+//
+// Created by Philippe VIENNE on 19/02/2016.
+//
+
+#ifndef SERVEURTCP_CONSTANTS_H
+#define SERVEURTCP_CONSTANTS_H
+
+#define REUSE_SOCKETS 1
+
+#endif //SERVEURTCP_CONSTANTS_H

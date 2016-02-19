@@ -10,6 +10,6 @@ int main(){
         fprintf(stderr, "Can not open an IPv4 socket ! Closing now.");
         exit(1);
     }
-    printf("Yeah ! Socket is opened with descriptor %d", socket_desc);
+    printf("Yeah ! Socket is opened with descriptor %d\n", socket_desc);
     return 0;
 }
