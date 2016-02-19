@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 #include "constants.h"
 
 int running = 1;
@@ -35,8 +36,12 @@ int main(){
     if(i < 0)
         printf("Failed to connect to server");
 
-    char message[] = "Hello my faboulous world!";
-    write(socket_desc, "Hello\n", 6);
+    write(socket_desc, "Hello.", 6);
+    char buffer;
+    do{
+        read(socket_desc, &buffer, 1);
+        printf("%c", buffer);
+    }while(buffer != '.');
 
     return 0;
 }

@@ -29,11 +29,16 @@ int main(){
         socklen_t length;
         int ack = accept(socket_desc, &client, &length);
         printf("New connection !\n");
-        char buffer[7];
-        read(ack, &buffer, 6);
-        printf("%s", buffer);
-        printf("Closed connection :-( \n");
+        char buffer;
+        do{
+            read(ack, &buffer, 1);
+            printf("%c", buffer);
+        }while(buffer != '.');
+        printf("\n");
+        char *message = "Welcome to you, but I can't talk more.";
+        write(ack, message, strlen(message));
         close(ack);
+        printf("Closed connection :-( \n");
     }
     return 0;
 }
