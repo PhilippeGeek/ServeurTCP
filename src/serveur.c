@@ -28,7 +28,10 @@ int main(){
         struct sockaddr client;
         socklen_t length;
         int ack = accept(socket_desc, &client, &length);
-        usleep(1000);
+        char buffer[100];
+        read(ack, &buffer, 100);
+        printf("%s", buffer);
+        close(ack);
     }
     return 0;
 }
