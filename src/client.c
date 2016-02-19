@@ -29,6 +29,8 @@ int main(){
     enable_reuse_socket(socket_desc);
 
     printf("Socket is opened with description: %d\n", socket_desc);
+    if(connect(socket_desc,(const struct sockaddr*)&addr, sizeof(addr))<0)
+        printf("Failed to connect to server");
 
 
     return 0;
