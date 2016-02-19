@@ -28,9 +28,11 @@ int main(){
         struct sockaddr client;
         socklen_t length;
         int ack = accept(socket_desc, &client, &length);
-        char buffer[100];
-        read(ack, &buffer, 100);
+        printf("New connection !\n");
+        char buffer[7];
+        read(ack, &buffer, 6);
         printf("%s", buffer);
+        printf("Closed connection :-( \n");
         close(ack);
     }
     return 0;

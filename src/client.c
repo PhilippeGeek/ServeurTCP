@@ -2,11 +2,13 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <stdlib.h>
-#include <string.h>
 #include <netinet/in.h>
+#include <string.h>
+#include <unistd.h>
 #include <arpa/inet.h>
-#include "client.h"
 #include "constants.h"
+
+int running = 1;
 
 void enable_reuse_socket(int socket_desc);
 
@@ -18,20 +20,23 @@ int main(){
         printf("Socket creation error\n");
         exit(1);
     }
+
+    enable_reuse_socket(socket_desc);
+
     struct sockaddr_in addr;
     memset((char*)&addr, 0, sizeof(addr));
     addr.sin_family= AF_INET;
     addr.sin_port=htons(SERVER_PORT);
-    struct in_addr listen_ip;
-    inet_aton("127.0.0.1", &listen_ip);
-    addr.sin_addr = listen_ip;
-
-    enable_reuse_socket(socket_desc);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); /* set destination IP number - localhost, 127.0.0.1*/
 
     printf("Socket is opened with description: %d\n", socket_desc);
-    if(connect(socket_desc,(const struct sockaddr*)&addr, sizeof(addr))<0)
+
+    int i = connect(socket_desc, (struct sockaddr *)&addr, sizeof(struct sockaddr));
+    if(i < 0)
         printf("Failed to connect to server");
 
+    char message[] = "Hello my faboulous world!";
+    write(socket_desc, "Hello\n", 6);
 
     return 0;
 }
