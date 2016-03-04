@@ -74,6 +74,9 @@ void handle_new_connection(int socket_desc) {
     struct sockaddr client;
     socklen_t length;
     int ack = accept(socket_desc, &client, &length);
+    if(ack<0){
+        handle_new_connection(socket_desc);
+    }
     pid_t pid = fork();
     if (pid == -1) {
         _exit(4);
@@ -82,27 +85,37 @@ void handle_new_connection(int socket_desc) {
         bool not_closed = true;
         while(not_closed){
             printf("New connection !\n");
-            char buffer;
+            char buffer[255];
+            int i = 0;
             bool reading = true;
+            printf("Reading for %d\n", getpid());
             do{
                 char c;
                 ssize_t x = recv(ack, &c, 1, MSG_PEEK);
+                printf("Recieved for %d\n", getpid());
                 if (x > 0) {
-                    buffer = (char) x;
-                    if(buffer == '.'){
+                    buffer[i] = c;
+                    if(buffer[i] == '.'){
+                        i++;
+                        buffer[i] = '\0';
                         reading = false;
                     }
-                    printf("%c", buffer);
+                    i++;
                 } else {
+                    printf("Client made a boubouh !\n");
                     not_closed = false;
                 }
             }while(reading);
+            printf("%d: Recieve message : %s\n", getpid(), buffer);
+            usleep(500);
             printf("\n");
             if(not_closed) {
+                printf("Respond for %d\n", getpid());
                 char *message = "Welcome to you, but I can't talk more.";
                 write(ack, message, strlen(message));
             }
         }
+        printf("End of world for %d\n", getpid());
         close(ack);
         _exit(EXIT_SUCCESS);
     } else {

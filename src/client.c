@@ -64,13 +64,31 @@ int main(int argc, char* argv[]){
     if(i < 0)
         printf("Failed to connect to server");
 
-    write(socket_desc, "Hello.", 6);
-    char buffer;
+    char *string = "Hello.";
+    for(int k=0; k<6; k++){
+        send(socket_desc, string, 6, 0);
+    }
+    bool reading = true;
+    bool not_closed = true;
+    char buffer[255];
+    int j = 0;
     do{
-        read(socket_desc, &buffer, 1);
-        printf("%c", buffer);
-    }while(buffer != '.');
-    wait(10);
+        char c;
+        ssize_t x = recv(socket_desc, &c, 1, MSG_PEEK);
+        if (x > 0) {
+            buffer[j] = c;
+            if(buffer[j] == '.'){
+                j++;
+                buffer[j] = '\0';
+                reading = false;
+            }
+            j++;
+        } else {
+            not_closed = false;
+        }
+    }while(reading);
+    printf("%d: Recieve message : %s\n", getpid(), buffer);
+    sleep(10);
     close(socket_desc);
 
     return 0;
@@ -80,7 +98,7 @@ bool parsePort(char* port_given, int *port) {
     bool exit_due_to_arg_error = false;
     (*port) = atoi(port_given);
     if(*port <= 0 || *port > 65535){
-        sprintf(stderr, "Port (%s) is incorrect and we could not continue !");
+        fprintf(stderr, "Port (%s) is incorrect and we could not continue !", port_given);
         exit_due_to_arg_error = true;
     }
     return exit_due_to_arg_error;
@@ -89,7 +107,7 @@ bool parsePort(char* port_given, int *port) {
 bool parseIP(char *ip_addr, unsigned int *ip) {
     bool exit_due_to_arg_error=false;
     if(!inet_pton(AF_INET, ip_addr, ip)){
-                sprintf(stderr, "IP (%s) is incorrect and we could not continue !");
+                fprintf(stderr, "IP (%s) is incorrect and we could not continue !", ip_addr);
                 exit_due_to_arg_error = true;
             }
     return exit_due_to_arg_error;
