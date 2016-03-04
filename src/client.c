@@ -65,8 +65,9 @@ int main(int argc, char* argv[]){
         printf("Failed to connect to server");
 
     char *string = "Hello.";
-    for(int k=0; k<6; k++){
-        send(socket_desc, string, 6, 0);
+    if(write(socket_desc, string, 6) != 6){
+        printf("Failed to connect to server\n");
+        exit(3);
     }
     bool reading = true;
     bool not_closed = true;
@@ -74,7 +75,7 @@ int main(int argc, char* argv[]){
     int j = 0;
     do{
         char c;
-        ssize_t x = recv(socket_desc, &c, 1, MSG_PEEK);
+        ssize_t x = read(socket_desc, &c, 1);
         if (x > 0) {
             buffer[j] = c;
             if(buffer[j] == '.'){

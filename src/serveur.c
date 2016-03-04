@@ -84,15 +84,12 @@ void handle_new_connection(int socket_desc) {
         printf("Hello from the child process (%d)!\n", getpid());
         bool not_closed = true;
         while(not_closed){
-            printf("New connection !\n");
             char buffer[255];
             int i = 0;
             bool reading = true;
-            printf("Reading for %d\n", getpid());
             do{
                 char c;
-                ssize_t x = recv(ack, &c, 1, MSG_PEEK);
-                printf("Recieved for %d\n", getpid());
+                ssize_t x = recv(ack, &c, 1, 0);
                 if (x > 0) {
                     buffer[i] = c;
                     if(buffer[i] == '.'){
@@ -102,17 +99,17 @@ void handle_new_connection(int socket_desc) {
                     }
                     i++;
                 } else {
-                    printf("Client made a boubouh !\n");
+                    printf("Client has closed connection !\n");
                     not_closed = false;
                 }
-            }while(reading);
+            }while(reading&&not_closed);
             printf("%d: Recieve message : %s\n", getpid(), buffer);
             usleep(500);
-            printf("\n");
             if(not_closed) {
-                printf("Respond for %d\n", getpid());
+                printf("%d: Respond on socket descriptor %d.\n", getpid(), ack);
                 char *message = "Welcome to you, but I can't talk more.";
                 write(ack, message, strlen(message));
+                FD_ZERO(&ack);
             }
         }
         printf("End of world for %d\n", getpid());
