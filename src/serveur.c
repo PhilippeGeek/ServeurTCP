@@ -1,15 +1,15 @@
 #include <stdio.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include "constants.h"
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 #include "serveur.h"
 
-int running = 1;
+void handle_new_connection(int socket_desc) ;
 
 int main(int argc, char* argv[]){
     int port;
@@ -38,22 +38,8 @@ int main(int argc, char* argv[]){
 
     printf("Yeah ! Socket is opened with descriptor %d\n", socket_desc);
 
-    while(running){
-        struct sockaddr client;
-        socklen_t length;
-        int ack = accept(socket_desc, &client, &length);
-        printf("New connection !\n");
-        char buffer;
-        do{
-            read(ack, &buffer, 1);
-            printf("%c", buffer);
-        }while(buffer != '.');
-        printf("\n");
-        char *message = "Welcome to you, but I can't talk more.";
-        write(ack, message, strlen(message));
-        close(ack);
-        printf("Closed connection :-( \n");
-    }
+    handle_new_connection(socket_desc);
+    close(socket_desc);
     return 0;
 }
 
@@ -81,4 +67,44 @@ void bind_server_socket(int socket_desc, int port) {
 void enable_reuse_socket(int socket_desc) {
     int reuse = REUSE_SOCKETS;
     setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)); // Setup to allow socket reopen
+}
+
+void handle_new_connection(int socket_desc) {
+    struct sockaddr client;
+    socklen_t length;
+    int ack = accept(socket_desc, &client, &length);
+    pid_t pid = fork();
+    if (pid == -1) {
+        _exit(4);
+    } else if (pid == 0) {
+        printf("Hello from the child process (%d)!\n", getpid());
+        bool not_closed = true;
+        while(not_closed){
+            printf("New connection !\n");
+            char buffer;
+            bool reading = true;
+            do{
+                char c;
+                ssize_t x = recv(ack, &c, 1, MSG_PEEK);
+                if (x > 0) {
+                    buffer = (char) x;
+                    if(buffer == '.'){
+                        reading = false;
+                    }
+                    printf("%c", buffer);
+                } else {
+                    not_closed = false;
+                }
+            }while(reading);
+            printf("\n");
+            if(not_closed) {
+                char *message = "Welcome to you, but I can't talk more.";
+                write(ack, message, strlen(message));
+            }
+        }
+        close(ack);
+        _exit(EXIT_SUCCESS);
+    } else {
+        handle_new_connection(socket_desc);
+    }
 }
