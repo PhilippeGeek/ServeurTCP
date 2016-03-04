@@ -54,6 +54,7 @@ int main(int argc, char* argv[]){
         close(ack);
         printf("Closed connection :-( \n");
     }
+    close(socket_desc);
     return 0;
 }
 
