@@ -11,7 +11,12 @@
 
 int running = 1;
 
-int main(){
+int main(int argc, char* argv[]){
+    switch(argc){
+        case 0: printf("Your port number will be 3456\n");
+                
+    }
+        
     int socket_desc = socket(AF_INET, SOCK_STREAM, 0);
     if(socket_desc == -1){
         fprintf(stderr, "Can not open an IPv4 socket ! Closing now.");
