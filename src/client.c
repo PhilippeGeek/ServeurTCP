@@ -13,7 +13,34 @@ int running = 1;
 
 void enable_reuse_socket(int socket_desc);
 
-int main(){
+bool parseIP(char *ip_addr, unsigned int *ip);
+
+bool parsePort(char* port_given, int *port);
+
+int main(int argc, char* argv[]){
+    unsigned int ip = INADDR_LOOPBACK;
+    int port = SERVER_PORT;
+    bool exit_due_to_arg_error;
+    switch(argc){
+        case 1:
+            fprintf(stderr, "You should, at least, give an IP for the server.");
+            exit_due_to_arg_error = true;
+            break;
+        case 2:
+            fprintf(stdout, "The argument %s will be interpreted as an IP. And port is supposed to be %d.", argv[1], SERVER_PORT);
+            exit_due_to_arg_error = parseIP(argv[1], &ip);
+            break;
+        case 3:
+            exit_due_to_arg_error = parsePort(argv[2], &port) && parseIP(argv[1], &ip);
+            break;
+        default:
+            fprintf(stderr, "Too many arguments we can not handle that!");
+            exit_due_to_arg_error = true;
+            break;
+    }
+    if(exit_due_to_arg_error){
+        exit(2);
+    }
     int socket_desc;
     socket_desc = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_desc < 0)
@@ -27,8 +54,8 @@ int main(){
     struct sockaddr_in addr;
     memset((char*)&addr, 0, sizeof(addr));
     addr.sin_family= AF_INET;
-    addr.sin_port=htons(SERVER_PORT);
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); /* set destination IP number - localhost, 127.0.0.1*/
+    addr.sin_port=htons(port);
+    addr.sin_addr.s_addr = htonl(ip); /* set destination IP number - localhost, 127.0.0.1*/
 
     printf("Socket is opened with description: %d\n", socket_desc);
 
@@ -44,6 +71,25 @@ int main(){
     }while(buffer != '.');
 
     return 0;
+}
+
+bool parsePort(char* port_given, int *port) {
+    bool exit_due_to_arg_error = false;
+    (*port) = atoi(port_given);
+    if(*port <= 0 || *port > 65535){
+        sprintf(stderr, "Port (%s) is incorrect and we could not continue !");
+        exit_due_to_arg_error = true;
+    }
+    return exit_due_to_arg_error;
+}
+
+bool parseIP(char *ip_addr, unsigned int *ip) {
+    bool exit_due_to_arg_error=false;
+    if(!inet_pton(AF_INET, ip_addr, ip)){
+                sprintf(stderr, "IP (%s) is incorrect and we could not continue !");
+                exit_due_to_arg_error = true;
+            }
+    return exit_due_to_arg_error;
 }
 
 void enable_reuse_socket(int socket_desc) {
