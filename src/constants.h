@@ -7,6 +7,7 @@
 
 #define REUSE_SOCKETS 1
 #define SERVER_PORT 3456
+#define TIMEOUT 15
 #define CLIENT_PORT 1645
 
 #endif //SERVEURTCP_CONSTANTS_H

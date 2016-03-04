@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <stdbool.h>
+#include <time.h>
 #include "serveur.h"
 
 void handle_new_connection(int socket_desc) ;
@@ -82,11 +83,18 @@ void handle_new_connection(int socket_desc) {
         _exit(4);
     } else if (pid == 0) {
         printf("Hello from the child process (%d)!\n", getpid());
+        time_t start_time = time(NULL);
+        time_t last_message_time = time(NULL);
         bool not_closed = true;
         while(not_closed){
             char buffer[255];
+            int counter;
+            for(counter = 0; counter < 255; counter++)
+                buffer[counter] = 0;
             int i = 0;
             bool reading = true;
+            start_time = time(NULL);
+            printf("%d: Waiting a message\n", getpid());
             do{
                 char c;
                 ssize_t x = recv(ack, &c, 1, 0);
@@ -99,17 +107,23 @@ void handle_new_connection(int socket_desc) {
                     }
                     i++;
                 } else {
-                    printf("Client has closed connection !\n");
-                    not_closed = false;
+                    if(time(NULL) - last_message_time  > TIMEOUT){
+                        reading = false;
+                        printf("%d: Client has closed connection !\n", getpid());
+                        not_closed = false;
+                    }
+                    usleep(500000);
                 }
-            }while(reading&&not_closed);
-            printf("%d: Recieve message : %s\n", getpid(), buffer);
+            }while(reading);
+            if(i>0) {
+                printf("%d: Recieve message : %s\n", getpid(), buffer);
+                last_message_time = time(NULL);
+            }
             usleep(500);
-            if(not_closed) {
+            if(not_closed&&i>0) {
                 printf("%d: Respond on socket descriptor %d.\n", getpid(), ack);
                 char *message = "Welcome to you, but I can't talk more.";
                 write(ack, message, strlen(message));
-                FD_ZERO(&ack);
             }
         }
         printf("End of world for %d\n", getpid());
