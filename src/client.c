@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <stdbool.h>
+#include <sys/wait.h>
 #include "constants.h"
 
 int running = 1;
@@ -69,6 +70,8 @@ int main(int argc, char* argv[]){
         read(socket_desc, &buffer, 1);
         printf("%c", buffer);
     }while(buffer != '.');
+    wait(10);
+    close(socket_desc);
 
     return 0;
 }
