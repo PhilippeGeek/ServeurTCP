@@ -71,6 +71,8 @@ void enable_reuse_socket(int socket_desc) {
     setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)); // Setup to allow socket reopen
 }
 
+fd_set opened_connections;
+
 void handle_new_connection(int socket_desc) {
     struct sockaddr client;
     socklen_t length;
@@ -83,6 +85,8 @@ void handle_new_connection(int socket_desc) {
         _exit(4);
     } else if (pid == 0) {
         printf("Hello from the child process (%d)!\n", getpid());
+        fd_set local;
+
         time_t start_time = time(NULL);
         time_t last_message_time = time(NULL);
         bool not_closed = true;
@@ -95,6 +99,7 @@ void handle_new_connection(int socket_desc) {
             bool reading = true;
             start_time = time(NULL);
             printf("%d: Waiting a message\n", getpid());
+            select(1, (fd_set *) &ack, 0, 0, 0);
             do{
                 char c;
                 ssize_t x = recv(ack, &c, 1, 0);
