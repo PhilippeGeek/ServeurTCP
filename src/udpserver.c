@@ -208,6 +208,7 @@ int main(int argc, char **argv) {
                 int buffer = 1024;
                 byte data[1024];
                 int b;
+                int total = 0;
 
                 do{
                     buffer = 1024;
@@ -218,7 +219,8 @@ int main(int argc, char **argv) {
                         buffer--;
                     }
                     int buffer_size = 1024 - buffer;
-                    (int) sendto(dedicated_sockfd, &buffer_size, sizeof(size), 0,
+                    total+=buffer_size;
+                    (int) sendto(dedicated_sockfd, &buffer_size, sizeof(buffer_size), 0,
                                  (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
                     (int) sendto(dedicated_sockfd, data, (size_t) buffer_size, 0,
                                  (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
@@ -230,14 +232,10 @@ int main(int argc, char **argv) {
 
                 fclose(fp);
 
+
+                printf("Sended %d\n", total);
                 // Serve the file
 
-
-                size = strlen(buf);
-                n = (int) sendto(dedicated_sockfd, &size, sizeof(size), 0, (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
-                n = (int) sendto(dedicated_sockfd, buf, strlen(buf), 0, (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
-                if(n<0)
-                    is_talking = false;
                 sleep(1);
             }
             close(sockfd);

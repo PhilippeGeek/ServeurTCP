@@ -110,16 +110,19 @@ int main(int argc, char **argv) {
     if(file == NULL){
         error("Can not write result.");
     }
-
+    int total = 0;
     bool is_talking = true;
     while(is_talking){
-        size_t s;
+        int s;
         (int) recvfrom(sockfd, &s, sizeof(s), 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
-        n = (int) recvfrom(sockfd, buf, s, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
-        is_talking = n>=0;
+        n = (int) recvfrom(sockfd, buf, (size_t) s, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
+        is_talking = n>=0 && s%1024==0;
+        total+=s;
         fwrite(buf, s, 1, file);
         send_ack(sockfd, serverlen, &serveraddr);
     }
+
+    fclose(file);
 
     return 0;
 }
