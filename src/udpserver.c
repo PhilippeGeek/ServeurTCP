@@ -124,7 +124,62 @@ int main(int argc, char **argv) {
         if(*buf != ACK)
             continue;
 
-        printf("3-way handshake ended with success !");
+        printf("3-way handshake ended with success !\n");
+
+        byte port = (byte) rand();
+
+        n = (int) sendto(sockfd, buf, 1, 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
+
+        if(n < 0)
+            printf("Can not send port to client\n");
+
+        int client = fork();
+
+        if(client<0){
+            error("Can not force the fork !\n");
+        }
+        if(client == 0){
+            bool is_talking = true;
+            int p = BASE_PORT+port;
+
+            sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+            if (sockfd < 0)
+                error("ERROR opening socket");
+
+            optval = 1;
+            setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
+                       (const void *)&optval , sizeof(int));
+
+            bzero((char *) &serveraddr, sizeof(serveraddr));
+            serveraddr.sin_family = AF_INET;
+            serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+            serveraddr.sin_port = htons((unsigned short) p);
+
+            if (bind(sockfd, (struct sockaddr *) &serveraddr,
+                     sizeof(serveraddr)) < 0)
+                error("ERROR on binding");
+
+            clientlen = sizeof(clientaddr);
+
+            while(is_talking){
+                n = (int) recvfrom(sockfd, buf, 1, 0,
+                                   (struct sockaddr *) &clientaddr, (socklen_t *) &clientlen);
+                if (n < 0)
+                    error("ERROR in recvfrom");
+                if(*buf != ACK)
+                    is_talking = false;
+
+                sprintf(buf,"Hello my name is Jarvis!\n");
+                n = (int) sendto(sockfd, buf, strlen(buf), 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
+                if(n<0)
+                    is_talking = false;
+                sleep(1);
+            }
+            close(sockfd);
+            exit(0);
+        } else {
+            printf("Client has been redirected to port %d\n", BASE_PORT+port);
+        }
 
     }
 }
