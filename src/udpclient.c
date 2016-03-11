@@ -99,11 +99,17 @@ int main(int argc, char **argv) {
 
     printf("Connected to port %d\n", BASE_PORT+(*buf));
 
-    sprintf(buf, "test_file.pdf");
-    size_t size_req = sizeof(buf);
+    sprintf(buf, "test_file.pdf\0");
+    size_t size_req = 13;
     printf("Request: %s, Size: %d\n", buf, (int) size_req);
     sendto(sockfd, &size_req, sizeof(size_t), 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
     sendto(sockfd, &buf, size_req, 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
+
+    FILE* file = fopen("result.pdf","w+");
+
+    if(file == NULL){
+        error("Can not write result.");
+    }
 
     bool is_talking = true;
     while(is_talking){
@@ -111,8 +117,8 @@ int main(int argc, char **argv) {
         (int) recvfrom(sockfd, &s, sizeof(s), 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
         n = (int) recvfrom(sockfd, buf, s, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
         is_talking = n>=0;
+        fwrite(buf, s, 1, file);
         send_ack(sockfd, serverlen, &serveraddr);
-        printf("Receive %d bytes.\n", n);
     }
 
     return 0;
