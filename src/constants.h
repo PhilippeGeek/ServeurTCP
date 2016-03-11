@@ -9,5 +9,8 @@
 #define SERVER_PORT 3456
 #define TIMEOUT 15
 #define CLIENT_PORT 1645
+#define ACK 0x00000001
+#define SYN 0x00000010
+#define SYN_ACK ACK+SYN
 
 #endif //SERVEURTCP_CONSTANTS_H
