@@ -3,6 +3,7 @@
 //
 
 #include "udpserver.h"
+#include "constants.h"
 
 /*
  * udpserver.c - A simple UDP echo server
@@ -18,8 +19,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 
 #define BUFSIZE 1024
+
+bool run = true;
 
 /*
  * error - wrapper for perror
@@ -85,20 +89,19 @@ int main(int argc, char **argv) {
      * main loop: wait for a datagram, then echo it
      */
     clientlen = sizeof(clientaddr);
-    while (1) {
+    while (run) {
 
         /*
          * recvfrom: receive a UDP datagram from a client
          */
         bzero(buf, BUFSIZE);
-        n = recvfrom(sockfd, buf, BUFSIZE, 0,
-                     (struct sockaddr *) &clientaddr, &clientlen);
+        n = (int) recvfrom(sockfd, buf, 1, 0,
+                           (struct sockaddr *) &clientaddr, (socklen_t *) &clientlen);
         if (n < 0)
             error("ERROR in recvfrom");
+        if(*buf != SYN)
+            continue;
 
-        /*
-         * gethostbyaddr: determine who sent the datagram
-         */
         hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
                               sizeof(clientaddr.sin_addr.s_addr), AF_INET);
         if (hostp == NULL)
@@ -106,16 +109,22 @@ int main(int argc, char **argv) {
         hostaddrp = inet_ntoa(clientaddr.sin_addr);
         if (hostaddrp == NULL)
             error("ERROR on inet_ntoa\n");
-        printf("server received datagram from %s (%s)\n",
+        printf("Connection started with %s (%s)\n",
                hostp->h_name, hostaddrp);
-        printf("server received %d/%d bytes: %s\n", strlen(buf), n, buf);
 
-        /*
-         * sendto: echo the input back to the client
-         */
-        n = sendto(sockfd, buf, strlen(buf), 0,
-                   (struct sockaddr *) &clientaddr, clientlen);
+        *buf = SYN_ACK;
+
+        n = (int) sendto(sockfd, buf, 1, 0,
+                         (struct sockaddr *) &clientaddr, (socklen_t) clientlen);
+
+        n = (int) recvfrom(sockfd, buf, 1, 0,
+                           (struct sockaddr *) &clientaddr, (socklen_t *) &clientlen);
         if (n < 0)
-            error("ERROR in sendto");
+            error("ERROR in recvfrom");
+        if(*buf != ACK)
+            continue;
+
+        printf("3-way handshake ended with success !");
+
     }
 }

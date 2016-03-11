@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include "constants.h"
 
 #define BUFSIZE 1024
 
@@ -53,24 +54,33 @@ int main(int argc, char **argv) {
     bzero((char *) &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
     bcopy((char *)server->h_addr,
-          (char *)&serveraddr.sin_addr.s_addr, server->h_length);
+          (char *)&serveraddr.sin_addr.s_addr, (size_t) server->h_length);
     serveraddr.sin_port = htons(portno);
 
     /* get a message from the user */
     bzero(buf, BUFSIZE);
-    printf("Please enter msg: ");
-    fgets(buf, BUFSIZE, stdin);
 
     /* send the message to the server */
     serverlen = sizeof(serveraddr);
-    n = sendto(sockfd, buf, strlen(buf), 0, &serveraddr, serverlen);
+    (*buf) = SYN;
+    n = (int) sendto(sockfd, buf, 1, 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
     if (n < 0)
         error("ERROR in sendto");
 
     /* print the server's reply */
-    n = recvfrom(sockfd, buf, strlen(buf), 0, &serveraddr, &serverlen);
+    n = (int) recvfrom(sockfd, buf, 1, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
     if (n < 0)
-        error("ERROR in recvfrom");
-    printf("Echo from server: %s", buf);
+        error("ERROR in SYN-ACK receive");
+
+    if((*buf) != SYN_ACK)
+        error("Cannot continue, the server refuse the ACK.");
+
+    (*buf) = ACK;
+    n = (int) sendto(sockfd, buf, 1, 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
+
+    if (n < 0)
+        error("ERROR in ACK sending");
+
+    printf("3-way handshake ended\n");
     return 0;
 }
