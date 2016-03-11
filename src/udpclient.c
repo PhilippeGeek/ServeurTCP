@@ -102,7 +102,9 @@ int main(int argc, char **argv) {
 
     bool is_talking = true;
     while(is_talking){
-        n = (int) recvfrom(sockfd, buf, 1, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
+        size_t s;
+        (int) recvfrom(sockfd, &s, sizeof(s), 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
+        n = (int) recvfrom(sockfd, buf, s, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
         is_talking = n>=0;
         printf("%s", buf);
     }

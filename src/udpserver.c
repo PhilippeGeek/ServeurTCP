@@ -128,8 +128,6 @@ int main(int argc, char **argv) {
 
         byte port = (byte) (rand()%256);
 
-        n = (int) sendto(sockfd, &port, 1, 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
-
         if(n < 0)
             printf("Can not send port to client\n");
 
@@ -144,36 +142,48 @@ int main(int argc, char **argv) {
 
             printf("In child %d\n", getpid());
 
-            sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-            if (sockfd < 0)
+            int dedicated_sockfd;
+            int dedicated_portno = BASE_PORT+port;
+            int dedicated_clientlen;
+            struct sockaddr_in dedicated_serveraddr;
+            struct sockaddr_in dedicated_clientaddr;
+
+            dedicated_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+            if (dedicated_sockfd < 0)
                 error("ERROR opening socket");
 
             optval = 1;
-            setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR,
+            setsockopt(dedicated_sockfd, SOL_SOCKET, SO_REUSEADDR,
                        (const void *)&optval , sizeof(int));
 
-            bzero((char *) &serveraddr, sizeof(serveraddr));
-            serveraddr.sin_family = AF_INET;
-            serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-            serveraddr.sin_port = htons((unsigned short) p);
+            bzero((char *) &dedicated_serveraddr, sizeof(dedicated_serveraddr));
+            dedicated_serveraddr.sin_family = AF_INET;
+            dedicated_serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+            dedicated_serveraddr.sin_port = htons((unsigned short) dedicated_portno);
 
-            if (bind(sockfd, (struct sockaddr *) &serveraddr,
-                     sizeof(serveraddr)) < 0)
+            if (bind(dedicated_sockfd, (struct sockaddr *) &dedicated_serveraddr,
+                     sizeof(dedicated_serveraddr)) < 0)
                 error("ERROR on binding");
 
-            clientlen = sizeof(clientaddr);
+            dedicated_clientlen = sizeof(dedicated_clientlen);
+
+            // Send the port on the old socket
+            n = (int) sendto(sockfd, &port, 1, 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
+
+            // Wait ACK on the new port
+            n = (int) recvfrom(dedicated_sockfd, buf, 1, 0,
+                               (struct sockaddr *) &dedicated_clientaddr, (socklen_t *) &dedicated_clientlen);
+            if (n < 0)
+                error("ERROR in recvfrom");
+            if(*buf != ACK)
+                is_talking = false;
 
             while(is_talking){
-                n = (int) recvfrom(sockfd, buf, 1, 0,
-                                   (struct sockaddr *) &clientaddr, (socklen_t *) &clientlen);
-                if (n < 0)
-                    error("ERROR in recvfrom");
-                if(*buf != ACK)
-                    is_talking = false;
-
                 sprintf(buf,"Hello my name is Jarvis!\n");
                 printf("Send message\n");
-                n = (int) sendto(sockfd, buf, BUFSIZE, 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
+                size_t size = strlen(buf);
+                n = (int) sendto(dedicated_sockfd, &size, sizeof(size), 0, (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
+                n = (int) sendto(dedicated_sockfd, buf, strlen(buf), 0, (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
                 if(n<0)
                     is_talking = false;
                 sleep(1);
