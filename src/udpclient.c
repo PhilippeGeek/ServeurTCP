@@ -17,6 +17,8 @@
 
 bool connect_to(int *sockfd, int portno, struct sockaddr_in *serveraddr, struct hostent *server, const char *hostname);
 
+void send_ack(int sockfd, int serverlen, struct sockaddr_in *serveraddr);
+
 /*
  * error - wrapper for perror
  */
@@ -93,12 +95,15 @@ int main(int argc, char **argv) {
 
     connect_to(&sockfd, BASE_PORT+((byte)*buf), &serveraddr, server, hostname);
 
-    (*buf) = ACK;
-    n = (int) sendto(sockfd, buf, 1, 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
-    if (n < 0)
-        error("ERROR in ACK sending for dedicated connection");
+    send_ack(sockfd, serverlen, &serveraddr);
 
     printf("Connected to port %d\n", BASE_PORT+(*buf));
+
+    sprintf(buf, "test_file.pdf");
+    size_t size_req = sizeof(buf);
+    printf("Request: %s, Size: %d\n", buf, (int) size_req);
+    sendto(sockfd, &size_req, sizeof(size_t), 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
+    sendto(sockfd, &buf, size_req, 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
 
     bool is_talking = true;
     while(is_talking){
@@ -106,10 +111,18 @@ int main(int argc, char **argv) {
         (int) recvfrom(sockfd, &s, sizeof(s), 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
         n = (int) recvfrom(sockfd, buf, s, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
         is_talking = n>=0;
-        printf("%s", buf);
+        send_ack(sockfd, serverlen, &serveraddr);
+        printf("Receive %d bytes.\n", n);
     }
 
     return 0;
+}
+
+void send_ack(int sockfd, int serverlen, struct sockaddr_in *serveraddr) {
+    byte buf[1];
+    (*buf) = ACK;
+    if (sendto(sockfd, buf, 1, 0, (const struct sockaddr *) serveraddr, (socklen_t) serverlen) < 0)
+        error("ERROR in ACK sending for dedicated connection");
 }
 
 bool connect_to(int *sockfd, int portno, struct sockaddr_in *serveraddr, struct hostent *server, const char *hostname) {/* socket: create the socket */

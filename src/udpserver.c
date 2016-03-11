@@ -179,9 +179,61 @@ int main(int argc, char **argv) {
                 is_talking = false;
 
             while(is_talking){
-                sprintf(buf,"Hello my name is Jarvis!\n");
-                printf("Send message\n");
-                size_t size = strlen(buf);
+
+                // Wait for request
+
+                size_t size = sizeof(size_t);
+                recvfrom(dedicated_sockfd, &size, sizeof(size_t), 0, (struct sockaddr *) &dedicated_clientaddr,
+                         (socklen_t *) &dedicated_clientlen);
+                printf("Will read a request %d\n", (int) size);
+
+                bzero(buf, BUFSIZE);
+                recvfrom(dedicated_sockfd, &buf, size, 0, (struct sockaddr *) &dedicated_clientaddr,
+                         (socklen_t *) &dedicated_clientlen);
+
+                printf("Asked %s\n", buf);
+
+                // Open the file
+
+                FILE* fp = fopen(buf,"r"); // read mode
+
+                if( fp == NULL )
+                {
+                    printf("Can not open %s\n", buf);
+                    size = 0;
+                    n = (int) sendto(dedicated_sockfd, &size, sizeof(size), 0, (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
+                    continue;
+                }
+
+                int buffer = 1024;
+                byte data[1024];
+                int b;
+
+                do{
+                    buffer = 1024;
+                    char byte;
+                    bzero(data, 1024);
+                    while(buffer != 0 && (b = fgetc(fp)) != EOF){
+                        data[1024-buffer] = (unsigned char)b;
+                        buffer--;
+                    }
+                    int buffer_size = 1024 - buffer;
+                    (int) sendto(dedicated_sockfd, &buffer_size, sizeof(size), 0,
+                                 (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
+                    (int) sendto(dedicated_sockfd, data, (size_t) buffer_size, 0,
+                                 (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
+                    n = (int) recvfrom(dedicated_sockfd, buf, 1, 0,
+                                       (struct sockaddr *) &dedicated_clientaddr, (socklen_t *) &dedicated_clientlen);
+                    if (n < 0)
+                        error("ERROR in recvfrom");
+                }while(buffer == 0);
+
+                fclose(fp);
+
+                // Serve the file
+
+
+                size = strlen(buf);
                 n = (int) sendto(dedicated_sockfd, &size, sizeof(size), 0, (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
                 n = (int) sendto(dedicated_sockfd, buf, strlen(buf), 0, (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
                 if(n<0)
