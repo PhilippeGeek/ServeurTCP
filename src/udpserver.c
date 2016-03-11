@@ -126,9 +126,9 @@ int main(int argc, char **argv) {
 
         printf("3-way handshake ended with success !\n");
 
-        byte port = (byte) rand();
+        byte port = (byte) (rand()%256);
 
-        n = (int) sendto(sockfd, buf, 1, 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
+        n = (int) sendto(sockfd, &port, 1, 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
 
         if(n < 0)
             printf("Can not send port to client\n");
@@ -141,6 +141,8 @@ int main(int argc, char **argv) {
         if(client == 0){
             bool is_talking = true;
             int p = BASE_PORT+port;
+
+            printf("In child %d\n", getpid());
 
             sockfd = socket(AF_INET, SOCK_DGRAM, 0);
             if (sockfd < 0)
@@ -170,7 +172,8 @@ int main(int argc, char **argv) {
                     is_talking = false;
 
                 sprintf(buf,"Hello my name is Jarvis!\n");
-                n = (int) sendto(sockfd, buf, strlen(buf), 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
+                printf("Send message\n");
+                n = (int) sendto(sockfd, buf, BUFSIZE, 0, (const struct sockaddr *) &clientaddr, (socklen_t) clientlen);
                 if(n<0)
                     is_talking = false;
                 sleep(1);

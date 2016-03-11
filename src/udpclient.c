@@ -10,9 +10,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <stdbool.h>
 #include "constants.h"
 
 #define BUFSIZE 1024
+
+bool connect_to(int *sockfd, int portno, struct sockaddr_in *serveraddr, struct hostent *server, const char *hostname);
 
 /*
  * error - wrapper for perror
@@ -81,6 +84,47 @@ int main(int argc, char **argv) {
     if (n < 0)
         error("ERROR in ACK sending");
 
-    printf("3-way handshake ended\n");
+    printf("3-way handshake ended - Waiting Port\n");
+    n = (int) recvfrom(sockfd, buf, 1, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
+    if (n < 0)
+        error("ERROR in PORT receive");
+
+    shutdown(sockfd, 2);
+
+    connect_to(&sockfd, BASE_PORT+((byte)*buf), &serveraddr, server, hostname);
+
+    (*buf) = ACK;
+    n = (int) sendto(sockfd, buf, 1, 0, (const struct sockaddr *) &serveraddr, (socklen_t) serverlen);
+    if (n < 0)
+        error("ERROR in ACK sending for dedicated connection");
+
+    printf("Connected to port %d\n", BASE_PORT+(*buf));
+
+    bool is_talking = true;
+    while(is_talking){
+        n = (int) recvfrom(sockfd, buf, 1, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
+        is_talking = n>=0;
+        printf("%s", buf);
+    }
+
     return 0;
+}
+
+bool connect_to(int *sockfd, int portno, struct sockaddr_in *serveraddr, struct hostent *server, const char *hostname) {/* socket: create the socket */
+    *sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0)
+        error("ERROR opening socket");
+
+    /* gethostbyname: get the server's DNS entry */
+    server = gethostbyname(hostname);
+    if (server == NULL) {
+        fprintf(stderr,"ERROR, no such host as %s\n", hostname);
+    }
+
+    /* build the server's Internet address */
+    bzero((char *) serveraddr, sizeof((*serveraddr)));
+    (*serveraddr).sin_family = AF_INET;
+    bcopy((char *)server->h_addr,
+          (char *)&(*serveraddr).sin_addr.s_addr, (size_t) server->h_length);
+    (*serveraddr).sin_port = htons(portno);
 }

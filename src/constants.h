@@ -5,7 +5,7 @@
 #ifndef SERVEURTCP_CONSTANTS_H
 #define SERVEURTCP_CONSTANTS_H
 
-typedef char byte;
+typedef unsigned char byte;
 #define REUSE_SOCKETS 1
 #define SERVER_PORT 3456
 #define TIMEOUT 15
