@@ -28,12 +28,14 @@ void error(char *msg) {
 }
 
 int main(int argc, char **argv) {
-    int sockfd, portno, n;
+    int sockfd, portno, n, i;
     int serverlen;
     struct sockaddr_in serveraddr;
     struct hostent *server;
     char *hostname;
-    char buf[BUFSIZE];
+    char buf[BUFSIZE+6];
+    char buf_2[BUFSIZE];
+
 
     /* check command line arguments */
     if (argc != 3) {
@@ -111,14 +113,25 @@ int main(int argc, char **argv) {
         error("Can not write result.");
     }
     int total = 0;
+    char segment_number[6];
     bool is_talking = true;
     while(is_talking){
         int s;
         (int) recvfrom(sockfd, &s, sizeof(s), 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
         n = (int) recvfrom(sockfd, buf, (size_t) s, 0, (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
+        for(i=0; i<=5; i++)
+        {
+            segment_number[i] = buf[i];
+        }
+        for(i=0; i<=BUFSIZE;i++)
+        {
+            buf_2[i] = buf[i+6];
+        }
+
+        printf("%s\n", segment_number);
         is_talking = n>=0 && s%1024==0;
         total+=s;
-        fwrite(buf, s, 1, file);
+        fwrite(buf_2, s, 1, file);
         send_ack(sockfd, serverlen, &serveraddr);
     }
 

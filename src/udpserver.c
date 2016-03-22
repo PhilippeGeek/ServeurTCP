@@ -209,8 +209,16 @@ int main(int argc, char **argv) {
                 byte data[1024];
                 int b;
                 int total = 0;
-
+                int segment_number = 1;
+                int i,j;
+                char ack_number1[6];
+                char ack_number2[6];
+                memset(ack_number1,0,6);
+                memset(ack_number2,'0',6);
                 do{
+                    i = 0;
+                    j = 0;
+                    sprintf(ack_number1, "%d", segment_number);
                     buffer = 1024;
                     char byte;
                     bzero(data, 1024);
@@ -218,12 +226,20 @@ int main(int argc, char **argv) {
                         data[1024-buffer] = (unsigned char)b;
                         buffer--;
                     }
+                    for(i=strlen(ack_number1)-1;i>=0;i--)
+                    {
+                        ack_number2[5-i] = ack_number1[j];
+                        j++;
+                    }
                     int buffer_size = 1024 - buffer;
                     total+=buffer_size;
                     (int) sendto(dedicated_sockfd, &buffer_size, sizeof(buffer_size), 0,
                                  (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
+                    memcpy(data,ack_number2,strlen(ack_number2)+1);
+                    printf("%s\n", data);
                     (int) sendto(dedicated_sockfd, data, (size_t) buffer_size, 0,
                                  (const struct sockaddr *) &dedicated_clientaddr, (socklen_t) dedicated_clientlen);
+                    segment_number++;
                     n = (int) recvfrom(dedicated_sockfd, buf, 1, 0,
                                        (struct sockaddr *) &dedicated_clientaddr, (socklen_t *) &dedicated_clientlen);
                     if (n < 0)
